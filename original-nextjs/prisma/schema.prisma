@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+enum Visibility {
+  DRAFT
+  PUBLISHED
+  PRIVATE
+  ARCHIVED
+}
+model Profile {
+  id String @id @default(cuid())
+  name String
+  headline String
+  location String?
+  email String?
+  phone String?
+  intro String?
+  summary String?
+  updatedAt DateTime @updatedAt
+}
+model CollectionItem {
+  id String @id @default(cuid())
+  collection String
+  title String
+  slug String? @unique
+  status Visibility @default(DRAFT)
+  featured Boolean @default(false)
+  position Int @default(0)
+  data Json
+  source String @default("manual")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([collection, status, position])
+}
+model Media {
+  id String @id @default(cuid())
+  name String
+  url String
+  mimeType String
+  size Int?
+  alt String?
+  createdAt DateTime @default(now())
+}
+model ContactSubmission {
+  id String @id @default(cuid())
+  name String
+  email String
+  company String?
+  message String
+  projectType String?
+  budget String?
+  timeline String?
+  status String @default("new")
+  createdAt DateTime @default(now())
+}
+model AnalyticsEvent {
+  id String @id @default(cuid())
+  name String
+  path String
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([createdAt, path])
+}

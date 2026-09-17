@@ -1,0 +1,3 @@
+import { NextResponse } from "next/server"; import { prisma } from "@/lib/prisma"; import { isAdmin } from "@/lib/auth";
+export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){if(!await isAdmin())return NextResponse.json({error:"Unauthorized"},{status:401});const body=await req.json();return NextResponse.json({item:await prisma.collectionItem.update({where:{id:(await params).id},data:body})})}
+export async function DELETE(_:Request,{params}:{params:Promise<{id:string}>}){if(!await isAdmin())return NextResponse.json({error:"Unauthorized"},{status:401});await prisma.collectionItem.delete({where:{id:(await params).id}});return NextResponse.json({ok:true})}

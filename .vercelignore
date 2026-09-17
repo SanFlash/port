@@ -1,0 +1,7 @@
+original-nextjs/
+tests/
+instance/
+.venv/
+.env
+__pycache__/
+previews/

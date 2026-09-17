@@ -1,0 +1,50 @@
+[
+  {
+    "title": "TEEJH",
+    "category": "Brand strategy",
+    "tag": "01 / POSITIONING",
+    "class": "jewellery",
+    "mark": "T",
+    "subtitle": "Tradition, with a point of view.",
+    "description": "Brand positioning and go-to-market strategy for an ethnic jewellery brand using the Brand Prism framework.",
+    "focus": "Ethnic jewellery",
+    "framework": "Brand Prism",
+    "scope": [
+      "Brand positioning",
+      "Go-to-market strategy",
+      "Brand Prism framework"
+    ]
+  },
+  {
+    "title": "TalkItOut Community",
+    "category": "Community",
+    "tag": "02 / CONNECTION",
+    "class": "community",
+    "mark": "talk\nit out.",
+    "subtitle": "A little more space to be yourself.",
+    "description": "Community-first brand identity addressing Gen Z mental-health trust barriers via Brand Archetypes.",
+    "focus": "Gen Z community",
+    "framework": "Brand Archetypes",
+    "scope": [
+      "Community-first brand identity",
+      "Gen Z mental-health trust barriers",
+      "Brand Archetypes"
+    ]
+  },
+  {
+    "title": "Bhuttico",
+    "category": "Research",
+    "tag": "03 / DISCOVERY",
+    "class": "weaving",
+    "mark": "B",
+    "subtitle": "Stories woven into strategy.",
+    "description": "Ethnographic research across a weaving ecosystem to identify branding and digital opportunities.",
+    "focus": "Weaving ecosystem",
+    "framework": "Ethnographic research",
+    "scope": [
+      "Ethnographic research",
+      "Branding opportunities",
+      "Digital opportunities"
+    ]
+  }
+]
