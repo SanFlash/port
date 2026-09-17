@@ -146,11 +146,20 @@ def create_app(config=None):
 
     @app.post('/api/auth/login')
     def login():
-        email, password = request.form.get('email',''), request.form.get('password','')
-        password_ok = (hmac.compare_digest(password.encode(), app.config['ADMIN_PASSWORD'].encode())
-            if app.config['ADMIN_PASSWORD'] else bool(app.config['ADMIN_PASSWORD_HASH']) and check_password_hash(app.config['ADMIN_PASSWORD_HASH'], password))
-        if not (app.config['ADMIN_EMAIL'] and hmac.compare_digest(email.encode(), app.config['ADMIN_EMAIL'].encode()) and password_ok):
-            return jsonify(error='Invalid credentials'), 401
+        configured_email = (app.config.get('ADMIN_EMAIL') or '').strip().casefold()
+        configured_password = app.config.get('ADMIN_PASSWORD') or ''
+        configured_hash = app.config.get('ADMIN_PASSWORD_HASH') or ''
+        if not configured_email or not (configured_password or configured_hash):
+            return jsonify(error='Admin sign-in is not configured on this server. Set ADMIN_EMAIL and ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) in the hosting environment, then redeploy.', code='admin_not_configured'), 503
+        email = request.form.get('email', '').strip().casefold()
+        password = request.form.get('password', '')
+        try:
+            password_ok = (hmac.compare_digest(password.encode(), configured_password.encode())
+                if configured_password else check_password_hash(configured_hash, password))
+        except (ValueError, TypeError):
+            return jsonify(error='The server admin password hash is invalid. Correct ADMIN_PASSWORD_HASH or set ADMIN_PASSWORD, then redeploy.', code='admin_configuration_invalid'), 503
+        if not (hmac.compare_digest(email.encode(), configured_email.encode()) and password_ok):
+            return jsonify(error='Sign-in failed. Check your email and password.', code='invalid_credentials'), 401
         session.clear()
         session.permanent = True
         session['role'] = 'admin'

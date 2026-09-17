@@ -91,7 +91,7 @@ class PortfolioTests(unittest.TestCase):
         configured=create_app({'TESTING':True,'DATABASE_URL':self.app.config['DATABASE_URL'],
             'ADMIN_EMAIL':'','ADMIN_PASSWORD':'','ADMIN_PASSWORD_HASH':''})
         client=configured.test_client()
-        self.assertEqual(client.post('/api/auth/login',data={'email':'','password':''}).status_code,401)
+        self.assertEqual(client.post('/api/auth/login',data={'email':'','password':''}).status_code,503)
         configured.extensions['portfolio_engine'].dispose()
     def test_resume_and_ajax_contact(self):
         response=self.client.get('/resume.txt')
@@ -109,4 +109,42 @@ class PortfolioTests(unittest.TestCase):
         import xml.etree.ElementTree as ET
         root=ET.fromstring(self.client.get('/sitemap.xml').data)
         self.assertEqual(root[0][0].text,'https://portfolio.example.com')
+
+class AdminConfigurationTests(unittest.TestCase):
+    def app(self, **overrides):
+        return create_app({'TESTING':True,'SECRET_KEY':'test-only-secret',
+            'DATABASE_URL':'sqlite:///:memory:', 'ADMIN_EMAIL':' Owner@Example.com ',
+            'ADMIN_PASSWORD':'test-only-password','ADMIN_PASSWORD_HASH':'',**overrides})
+    def test_email_normalization(self):
+        app=self.app()
+        client=app.test_client()
+        self.assertEqual(client.post('/api/auth/login',data={'email':' OWNER@example.COM ','password':'test-only-password'}).status_code,200)
+        self.assertIn('Add new',client.get('/admin').get_data(as_text=True))
+    def test_password_is_exact(self):
+        client=self.app().test_client()
+        self.assertEqual(client.post('/api/auth/login',data={'email':'owner@example.com','password':' test-only-password'}).status_code,401)
+    def test_missing_configuration_has_specific_error(self):
+        for values in [{'ADMIN_EMAIL':''},{'ADMIN_PASSWORD':'','ADMIN_PASSWORD_HASH':''}]:
+            response=self.app(**values).test_client().post('/api/auth/login',data={})
+            self.assertEqual(response.status_code,503)
+            self.assertEqual(response.json['code'],'admin_not_configured')
+    def test_bad_hash_is_not_server_crash(self):
+        response=self.app(ADMIN_PASSWORD='',ADMIN_PASSWORD_HASH='unsupported$bad$hash').test_client().post('/api/auth/login',data={'email':'owner@example.com','password':'x'})
+        self.assertEqual(response.status_code,503)
+        self.assertEqual(response.json['code'],'admin_configuration_invalid')
+    def test_local_setup_roundtrip_and_preservation(self):
+        from configure_admin import configure
+        from dotenv import dotenv_values
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'.env'
+            path.write_text('DATABASE_URL=sqlite:///existing.db\nAUTH_SECRET=existing-private-secret\nADMIN_PASSWORD=old-test-password\n')
+            configure(path,' Owner@Example.com ','test-only-password')
+            values=dotenv_values(path)
+            self.assertEqual(values['DATABASE_URL'],'sqlite:///existing.db')
+            self.assertEqual(values['AUTH_SECRET'],'existing-private-secret')
+            self.assertEqual(values['ADMIN_PASSWORD'],'')
+            self.assertNotIn('test-only-password',path.read_text())
+            client=self.app(ADMIN_EMAIL=values['ADMIN_EMAIL'],ADMIN_PASSWORD='',ADMIN_PASSWORD_HASH=values['ADMIN_PASSWORD_HASH']).test_client()
+            self.assertEqual(client.post('/api/auth/login',data={'email':'owner@example.com','password':'test-only-password'}).status_code,200)
+
 if __name__=='__main__':unittest.main()

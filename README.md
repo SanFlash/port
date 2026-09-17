@@ -33,7 +33,7 @@ python app.py
 ```
 
 Visit http://localhost:5000. Admin: http://localhost:5000/admin.
-Set your admin environment variables in `.env` before signing in.
+Run `python configure_admin.py` to save your email and password securely in the local `.env`, then restart the app.
 Local storage uses `instance/portfolio.db` when `DATABASE_URL` is blank.
 
 On macOS/Linux use `python3.13 -m venv .venv`, `source .venv/bin/activate`,
@@ -91,7 +91,7 @@ A ZIP does not contain records from an external production database.
 6. Set a random `AUTH_SECRET`; the Blueprint generates one automatically.
 7. Deploy. `.python-version` selects Python 3.13.
 
-The Blueprint asks for the admin email and password hash as private environment settings.
+The Blueprint asks for ADMIN_EMAIL and ADMIN_PASSWORD as private environment settings.
 
 ## Deploy to Vercel
 
@@ -145,3 +145,27 @@ Deployment references:
 - https://vercel.com/docs/functions/runtimes/python
 - https://render.com/docs/deploy-flask
 - https://render.com/docs/python-version
+
+## Fix an admin sign-in configuration error
+
+A GitHub upload does not set private hosting variables. On an existing Render or
+Vercel deployment, open the service/project Environment settings and set:
+
+- `ADMIN_EMAIL`: the email you want to sign in with.
+- `ADMIN_PASSWORD`: the exact password, without surrounding quotes or Markdown
+  backslashes. Use a plain `@` character, not `\@`.
+- Keep a stable `AUTH_SECRET` across deployments and workers.
+
+Save and redeploy/restart the service. Existing Render services do not automatically
+receive secret values just because `render.yaml` changed. Vercel requires the values
+in the environment of the deployment you are visiting (Production or Preview).
+`ADMIN_PASSWORD` takes precedence over `ADMIN_PASSWORD_HASH`; update any old value.
+Email matching ignores capitalization and surrounding spaces; passwords remain exact.
+
+For local use, run `python configure_admin.py`. It prompts for your email and password,
+saves a password hash to your ignored `.env`, clears a stale plaintext password setting,
+and generates a session secret if needed. Restart Flask after running it. This command
+is for local setup; it does not modify hosted environment variables.
+
+The sign-in screen now distinguishes incomplete configuration, wrong credentials,
+network failures, and timeouts. No default password is committed to this public repository.

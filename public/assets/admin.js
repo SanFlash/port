@@ -5,7 +5,10 @@ const collection = () => active.toLowerCase().replaceAll(' ', '-');
 function notice(text) { $('notice').textContent = text; $('notice').hidden = !text; }
 async function api(url, options) {
   const r = await fetch(url, options);
-  if (!r.ok) throw new Error('Request failed');
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.error || 'The server could not complete the request. Please try again.');
+  }
   return r.json();
 }
 function draw() {
@@ -43,8 +46,20 @@ async function load() {
 }
 if ($('login')) $('login').onsubmit = async e => {
   e.preventDefault();
-  try { await api('/api/auth/login', {method:'POST',body:new FormData(e.currentTarget)}); location.reload(); }
-  catch { notice('Sign-in failed. Check the configured email and password.'); }
+  const form = e.currentTarget, button = form.querySelector('button[type="submit"]');
+  if (button.disabled) return;
+  button.disabled = true; notice('Signing in…');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+  try {
+    await api('/api/auth/login', {method:'POST', body:new FormData(form), signal:controller.signal});
+    location.reload();
+  } catch (error) {
+    notice(error.name === 'AbortError' ? 'Sign-in timed out. Please try again.' :
+      error instanceof TypeError ? 'Could not reach the server. Check your connection and try again.' : error.message);
+  } finally {
+    clearTimeout(timeout); button.disabled = false;
+  }
 };
 if ($('save')) {
   document.querySelectorAll('[data-section]').forEach(button => button.onclick = () => {
